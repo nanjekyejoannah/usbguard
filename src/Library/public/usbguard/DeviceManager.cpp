@@ -163,27 +163,27 @@ namespace usbguard
   #include "UEventDeviceManager.hpp"
 #endif
 
+#if defined(HAVE_UMOCKDEV)
+  #include "UMockdevDeviceManager.hpp"
+#endif
+
 std::shared_ptr<usbguard::DeviceManager> usbguard::DeviceManager::create(DeviceManagerHooks& hooks, const std::string& backend)
 {
-#if defined(HAVE_UEVENT)
-
   if (backend == "udev") {
     USBGUARD_LOG(Warning) << "udev backend is OBSOLETE. Falling back to new default: uevent";
   }
+
+#if defined(HAVE_UEVENT)
 
   if (backend == "uevent" || /* transition udev => uevent */backend == "udev") {
     return std::make_shared<usbguard::UEventDeviceManager>(hooks);
   }
 
-  if (backend == "dummy") {
-    const char* const device_root_cstr = getenv("USBGUARD_DUMMY_DEVICE_ROOT");
+#endif
+#if defined(HAVE_UMOCKDEV)
 
-    if (device_root_cstr == nullptr) {
-      throw Exception("DeviceManager", "dummy", "USBGUARD_DUMMY_DEVICE_ROOT environment variable not defined");
-    }
-
-    const std::string device_root(device_root_cstr);
-    return std::make_shared<usbguard::UEventDeviceManager>(hooks, device_root, /*dummy_mode=*/true);
+  if (backend == "umockdev") {
+    return std::make_shared<usbguard::UMockdevDeviceManager>(hooks);
   }
 
 #endif

@@ -48,6 +48,9 @@ namespace usbguard
     int openAttribute(const std::string& name) const;
 
     void reload();
+
+    static void setSysfsRoot(const std::string& sysfs_root);
+    static const std::string& getSysfsRoot();
   private:
     void reloadUEvent();
 

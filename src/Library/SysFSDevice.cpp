@@ -36,6 +36,18 @@
 
 namespace usbguard
 {
+  static std::string G_sysfs_root = "/sys";
+
+  void SysFSDevice::setSysfsRoot(const std::string& sysfs_root)
+  {
+    G_sysfs_root = sysfs_root;
+  }
+
+  const std::string& SysFSDevice::getSysfsRoot()
+  {
+    return G_sysfs_root;
+  }
+
   SysFSDevice::SysFSDevice()
     : _sysfs_dirfd(-1)
   {
@@ -60,7 +72,7 @@ namespace usbguard
     }
 
     USBGUARD_SYSCALL_THROW("SysFSDevice",
-      (_sysfs_dirfd = open(_sysfs_path.c_str(), O_PATH|O_DIRECTORY)) < 0);
+      (_sysfs_dirfd = open((G_sysfs_root + _sysfs_path).c_str(), O_PATH|O_DIRECTORY)) < 0);
 
     try {
       reloadUEvent();
@@ -165,19 +177,20 @@ namespace usbguard
     USBGUARD_SYSCALL_THROW("SysFSDevice",
       (rc = read(fd, &buffer[0], buffer.capacity())) < 0);
 
-    if (strip_last_null) {
-      if (rc > 0) {
-        buffer.resize(static_cast<size_t>(rc) - 1);
-      }
-      else {
-        return std::string();
-      }
-    }
-    else {
-      buffer.resize(static_cast<size_t>(rc));
+    if (rc <= 0) {
+      return std::string();
     }
 
-    USBGUARD_LOG(Debug) << "value=" << buffer << " size=" << buffer.size();
+    const size_t read_size = static_cast<size_t>(rc);
+
+    if (strip_last_null && buffer[read_size - 1] == '\0') {
+      buffer.resize(read_size - 1);
+    }
+    else {
+      buffer.resize(read_size);
+    }
+
+    //USBGUARD_LOG(Debug) << "value=" << buffer << " size=" << buffer.size();
     return buffer;
   }
 
